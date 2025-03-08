@@ -176,6 +176,7 @@ class TDSConvCTCModule(pl.LightningModule):
             ),
             # (T, N, num_classes)
             nn.Linear(num_features, charset().num_classes),
+            nn.RNN(charset().num_classes, charset().num_classes),
             nn.LogSoftmax(dim=-1),
         )
 
