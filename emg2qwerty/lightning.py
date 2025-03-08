@@ -25,6 +25,7 @@ from emg2qwerty.modules import (
     MultiBandRotationInvariantMLP,
     SpectrogramNorm,
     TDSConvEncoder,
+    LinearRNN,
 )
 from emg2qwerty.transforms import Transform
 
@@ -175,8 +176,8 @@ class TDSConvCTCModule(pl.LightningModule):
                 kernel_width=kernel_width,
             ),
             # (T, N, num_classes)
-            nn.Linear(num_features, charset().num_classes),
-            nn.RNN(charset().num_classes, charset().num_classes),
+            #old line nn.Linear(num_features, charset().num_classes),
+            LinearRNN(num_features, charset().num_classes),
             nn.LogSoftmax(dim=-1),
         )
 

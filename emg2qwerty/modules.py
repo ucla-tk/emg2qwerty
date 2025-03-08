@@ -278,3 +278,22 @@ class TDSConvEncoder(nn.Module):
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         return self.tds_conv_blocks(inputs)  # (T, N, num_features)
+    
+class LinearRNN(nn.Module):
+    """
+    Boogle
+    """
+
+    def __init__(
+        self,
+        num_features: int,
+        num_output: int
+    ) -> None:
+        super().__init__()
+        self.linear = nn.Linear(num_features, num_output)
+        self.rnn = nn.RNN(num_output, num_output)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        x = self.linear(inputs)
+        x, _ = self.rnn(x)
+        return x  # (T, N, num_features)
