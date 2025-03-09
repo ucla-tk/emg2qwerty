@@ -239,6 +239,35 @@ class TDSFullyConnectedBlock(nn.Module):
         x = x + inputs
         return self.layer_norm(x)  # TNC
 
+class TDSLSTMEncoder(nn.Module):
+    # THIS CODE WAS RETRIEVED FROM THE CODING HELPER
+    # CODE MADE WITH HELP OF COPILOT
+    def __init__(
+        self,
+        num_features: int,
+        lstm_hidden_size: int = 128,
+        num_lstm_layers: int = 2,
+    ) -> None:
+        super().__init__()
+
+        self.lstm_stack = nn.LSTM(
+            input_size=num_features,
+            hidden_size=lstm_hidden_size,
+            num_layers=num_lstm_layers,
+            batch_first=False,
+            bidirectional=True,
+        )
+
+        self.fc_block = TDSFullyConnectedBlock(2 * lstm_hidden_size)
+        self.out_layer = nn.Linear(2 * lstm_hidden_size, num_features)
+    
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        x, _ = self.lstm_stack(inputs)
+        x = self.fc_block(x)
+        x = self.out_layer(x)
+        return x  
+            
+    
 
 class TDSConvEncoder(nn.Module):
     """A time depth-separable convolutional encoder composing a sequence
