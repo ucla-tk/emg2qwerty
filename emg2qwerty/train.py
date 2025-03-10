@@ -90,6 +90,9 @@ def main(config: DictConfig):
     callback_configs = config.get("callbacks", [])
     callbacks = [instantiate(cfg) for cfg in callback_configs]
 
+    # Dump model into logs
+    print(module)
+
     # Initialize trainer
     trainer = pl.Trainer(
         **config.trainer,
@@ -116,12 +119,12 @@ def main(config: DictConfig):
     val_metrics = trainer.validate(module, datamodule)
     
     # test keeps crashing my gpu, so we're doing cpu accelerator instead
-    config.trainer["accelerator"] = "cpu"
-    # Initialize trainer
-    trainer = pl.Trainer(
-        **config.trainer,
-        callbacks=callbacks,
-    )
+    # config.trainer["accelerator"] = "cpu"
+    # # Initialize trainer
+    # trainer = pl.Trainer(
+    #     **config.trainer,
+    #     callbacks=callbacks,
+    # )
     test_metrics = trainer.test(module, datamodule)
 
     results = {
