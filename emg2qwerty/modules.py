@@ -332,3 +332,46 @@ class TDSGRUEncoder(nn.Module):
         x = self.fc_block(x)
         x = self.out_layer(x)
         return x
+
+class TDSConvCascade(nn.Module):
+    """A time depth-separable convolutional encoder composing a sequence
+    of `TDSConv2dBlock` and `TDSFullyConnectedBlock` as per
+    "Sequence-to-Sequence Speech Recognition with Time-Depth Separable
+    Convolutions, Hannun et al" (https://arxiv.org/abs/1904.02619).
+
+    Args:
+        num_features (int): ``num_features`` for an input of shape
+            (T, N, num_features).
+        block_channels (list): A list of integers indicating the number
+            of channels per `TDSConv2dBlock`.
+        kernel_width (int): The kernel size of the temporal convolutions.
+    """
+
+    def __init__(
+        self,
+        num_features: int,
+        block_channels: Sequence[int] = (24, 24, 24, 24),
+        kernel_width: int = 32,
+    ) -> None:
+        super().__init__()
+
+        assert len(block_channels) > 0
+        tds_conv_blocks: list[nn.Module] = []
+        for channels in block_channels:
+            assert (
+                num_features % channels == 0
+            ), "block_channels must evenly divide num_features"
+            tds_conv_blocks.extend(
+                [
+                    TDSConv2dBlock(channels, num_features // channels, kernel_width),
+                ]
+            )
+        
+        self.tds_conv_blocks = nn.Sequential(
+            *tds_conv_blocks,
+            TDSFullyConnectedBlock(num_features)
+        )
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return self.tds_conv_blocks(inputs)  # (T, N, num_features)
+
