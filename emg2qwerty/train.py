@@ -114,6 +114,14 @@ def main(config: DictConfig):
     # Validate and test on the best checkpoint (if training), or on the
     # loaded `config.checkpoint` (otherwise)
     val_metrics = trainer.validate(module, datamodule)
+    
+    # test keeps crashing my gpu, so we're doing cpu accelerator instead
+    config.trainer["accelerator"] = "cpu"
+    # Initialize trainer
+    trainer = pl.Trainer(
+        **config.trainer,
+        callbacks=callbacks,
+    )
     test_metrics = trainer.test(module, datamodule)
 
     results = {

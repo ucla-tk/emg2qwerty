@@ -4,7 +4,7 @@ module:
   in_features: 528  # freq * channels = (n_fft // 2 + 1) * 16
   mlp_features: [384]
   gru_hidden_size: 128
-  num_gru_layers: 8
+  gru_num_layers: 4
 
 datamodule:
   _target_: emg2qwerty.lightning.WindowedEMGDataModule
