@@ -239,6 +239,23 @@ class TDSFullyConnectedBlock(nn.Module):
         x = x + inputs
         return self.layer_norm(x)  # TNC
 
+class TDSTransformerEncoder(nn.Module):
+    def __init__(
+        self,
+        num_features: int,
+        nhead: int = 8,
+        num_encoder_layers: int = 6,
+        num_decoder_layers: int = 6,
+        dim_feedforward: int = 2048,
+        dropout: float = 0.1,
+        activation: str = "gelu",
+    ) -> None:
+        super().__init__()
+
+        self.transformer_stack = nn.TransformerEncoder(
+            
+        )
+
 class TDSLSTMEncoder(nn.Module):
     # THIS CODE WAS RETRIEVED FROM THE CODING HELPER
     # CODE MADE WITH HELP OF COPILOT
@@ -260,13 +277,42 @@ class TDSLSTMEncoder(nn.Module):
 
         self.fc_block = TDSFullyConnectedBlock(2 * lstm_hidden_size)
         self.out_layer = nn.Linear(2 * lstm_hidden_size, num_features)
+        self.relu = nn.ReLU()
     
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         x, _ = self.lstm_stack(inputs)
         x = self.fc_block(x)
         x = self.out_layer(x)
+        x = self.relu(x)
         return x  
-            
+    
+class TDSGRUEncoder(nn.Module):
+    # THIS CODE WAS RETRIEVED FROM THE CODING HELPER
+    # CODE MADE WITH HELP OF COPILOT
+    def __init__(
+        self,
+        num_features: int,
+        gru_hidden_size: int = 128,
+        num_gru_layers: int = 2,
+    ) -> None:
+        super().__init__()
+
+        self.gru_stack = nn.GRU(
+            input_size=num_features,
+            hidden_size=gru_hidden_size,
+            num_layers=num_gru_layers,
+            batch_first=False,
+            bidirectional=True,
+        )
+
+        self.fc_block = TDSFullyConnectedBlock(2 * gru_hidden_size)
+        self.out_layer = nn.Linear(2 * gru_hidden_size, num_features)
+    
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        x, _ = self.gru_stack(inputs)
+        x = self.fc_block(x)
+        x = self.out_layer(x)
+        return x  
     
 
 class TDSConvEncoder(nn.Module):
