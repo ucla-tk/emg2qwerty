@@ -1,7 +1,7 @@
 defaults:
   - user: single_user
   - transforms: log_spectrogram
-  - model: tds_gru_ctc
+  - model: tds_conv_ctc
   - optimizer: adam
   - lr_scheduler: linear_warmup_cosine_annealing
   - decoder: ctc_greedy
@@ -20,8 +20,7 @@ trainer:
   accelerator: gpu
   devices: 1
   num_nodes: 1
-  max_epochs: 30
-  accumulate_grad_batches : 32
+  max_epochs: 150
   default_root_dir: ${hydra:runtime.output_dir}
 
 callbacks:

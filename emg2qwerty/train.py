@@ -96,8 +96,6 @@ def main(config: DictConfig):
         callbacks=callbacks,
     )
 
-    print(module)
-
     if config.train:
         # Check if a past checkpoint exists to resume training from
         checkpoint_dir = Path.cwd().joinpath("checkpoints")

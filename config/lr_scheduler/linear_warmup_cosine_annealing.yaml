@@ -5,5 +5,5 @@ lr_scheduler:
     warmup_epochs: 10
     max_epochs: ${trainer.max_epochs}
     warmup_start_lr: 1e-8
-    eta_min: 1e-7 # altered is 1e-10
+    eta_min: 1e-6
   interval: epoch
