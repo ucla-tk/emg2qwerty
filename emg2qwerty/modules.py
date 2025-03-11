@@ -293,6 +293,7 @@ class TDSLSTMEncoder(nn.Module):
             input_size=num_features,
             hidden_size=lstm_hidden_size,
             num_layers=lstm_num_layers,
+            dropout=0.2,
             batch_first=False,
             bidirectional=True,
         )
