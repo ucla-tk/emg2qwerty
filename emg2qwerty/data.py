@@ -524,8 +524,8 @@ class WindowedEMGDataset(torch.utils.data.Dataset):
         targets = [sample[1] for sample in samples]  # [(T,)]
 
         # Batch of inputs and targets padded along time
-        input_batch = nn.utils.rnn.pad_sequence(inputs)  # (T, N, ...)
-        target_batch = nn.utils.rnn.pad_sequence(targets)  # (T, N)
+        input_batch = nn.utils.rnn.pad_sequence(inputs, padding_value=charset().num_classes)  # (T, N, ...)
+        target_batch = nn.utils.rnn.pad_sequence(targets, padding_value=charset().num_classes)  # (T, N)
 
         # Lengths of unpadded input and target sequences for each batch entry
         input_lengths = torch.as_tensor(
