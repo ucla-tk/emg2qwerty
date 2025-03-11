@@ -375,38 +375,3 @@ class TDSConvCascade(nn.Module):
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         return self.tds_conv_blocks(inputs)  # (T, N, num_features)
 
-class TDSTransformer(nn.Module):
-    # directly from coding helper
-    def __init__(
-        self,
-        num_features: int,
-        num_classes: int,
-    ) -> None:
-        super().__init__()
-        
-        self.embedding = nn.Embedding(num_classes+1, num_features, padding_idx=num_classes)
-
-        self.transformer = nn.Transformer(
-            d_model=num_features
-        )
-
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
-        # we make a mask that goes across or something
-        # N x T dimesional mask 
-        tgt = self.embedding(targets)
-
-        max_input_length = input_lengths.max()
-        max_target_length = target_lengths.max()
-
-        input_val0 = torch.Tensor(torch.arange(max_input_length).unsqueeze(0)).cuda()
-        input_val1 = torch.Tensor(input_lengths.unsqueeze(1))
-        
-        target_val0 = torch.Tensor(torch.arange(max_target_length).unsqueeze(0)).cuda()
-        target_val1 = torch.Tensor(target_lengths.unsqueeze(1))
-        
-        input_key_padding_mask = input_val0 >= input_val1
-        target_key_padding_mask = target_val0 >= target_val1    
-        
-
-        x = self.transformer(inputs, tgt, src_key_padding_mask=input_key_padding_mask, tgt_key_padding_mask=target_key_padding_mask)
-        return x
