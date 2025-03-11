@@ -28,7 +28,6 @@ from emg2qwerty.modules import (
     TDSLSTMEncoder,
     TDSGRUEncoder,
     TDSConvCascade,
-    TDSTransformer
 )
 from emg2qwerty.transforms import Transform
 
@@ -1132,7 +1131,7 @@ class TDSConvCascadeGRUCTCModule(pl.LightningModule):
 ###############################################################
 ###############################################################
 
-class TDSTransformerCTCModule(pl.LightningModule):
+class TDSTransformerEncoderCTCModule(pl.LightningModule):
     NUM_BANDS: ClassVar[int] = 2
     ELECTRODE_CHANNELS: ClassVar[int] = 16
 
@@ -1140,6 +1139,9 @@ class TDSTransformerCTCModule(pl.LightningModule):
         self,
         in_features: int,
         mlp_features: Sequence[int],
+        nhead: int,
+        dim_feedfoward: int,
+        num_layers: int,
         optimizer: DictConfig,
         lr_scheduler: DictConfig,
         decoder: DictConfig,
@@ -1149,9 +1151,15 @@ class TDSTransformerCTCModule(pl.LightningModule):
 
         num_features = self.NUM_BANDS * mlp_features[-1]
 
+        self.transformerencoder = nn.TransformerEncoderLayer(
+            d_model=num_features,
+            nhead=nhead,
+            dim_feedforward=dim_feedfoward,
+        )
+
         # Model
         # inputs: (T, N, bands=2, electrode_channels=16, freq)
-        self.preprocess_model = nn.Sequential(
+        self.model = nn.Sequential(
             # (T, N, bands=2, C=16, freq)
             SpectrogramNorm(channels=self.NUM_BANDS * self.ELECTRODE_CHANNELS),
             # (T, N, bands=2, mlp_features[-1])
@@ -1161,14 +1169,17 @@ class TDSTransformerCTCModule(pl.LightningModule):
                 num_bands=self.NUM_BANDS,
             ),
             # (T, N, num_features)
-            nn.Flatten(start_dim=2),)
-
+            nn.Flatten(start_dim=2),
+            # TDSConvEncoder(
+            #     num_features=num_features,
+            #     block_channels=block_channels,
+            #     kernel_width=kernel_width,
+            # ),
+            nn.TransformerEncoder(
+                encoder_layer=self.transformerencoder,
+                num_layers=num_layers,
+            ),
             # (T, N, num_classes)
-        self.transformer = TDSTransformer(
-            num_features=num_features,
-            num_classes=charset().num_classes,
-        )
-        self.linsoft_model = nn.Sequential(
             nn.Linear(num_features, charset().num_classes),
             nn.LogSoftmax(dim=-1),
         )
@@ -1188,11 +1199,8 @@ class TDSTransformerCTCModule(pl.LightningModule):
             }
         )
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
-        x = self.preprocess_model(inputs)
-        x = self.transformer(x, targets, input_lengths, target_lengths)
-        x = self.linsoft_model(x)
-        return x
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return self.model(inputs)
 
     def _step(
         self, phase: str, batch: dict[str, torch.Tensor], *args, **kwargs
@@ -1203,7 +1211,7 @@ class TDSTransformerCTCModule(pl.LightningModule):
         target_lengths = batch["target_lengths"]
         N = len(input_lengths)  # batch_size
 
-        emissions = self.forward(inputs, targets, input_lengths, target_lengths)
+        emissions = self.forward(inputs)
 
         # Shrink input lengths by an amount equivalent to the conv encoder's
         # temporal receptive field to compute output activation lengths for CTCLoss.
