@@ -1379,6 +1379,11 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         flag2 = torch.isnan(hiddens[1]).any()
 
         if flag0 or flag1 or flag2: 
+            print(inputs)
+            if len(args) == 1:
+                print("hiddens not present")
+            else:
+                print(args[1])
             raise Exception("NaN appeared: ", flag0, flag1, flag2)
 
 
