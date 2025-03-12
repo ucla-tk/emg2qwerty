@@ -1412,7 +1412,7 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
 
         if torch.isnan(loss):
             warnings.warn("Loss contains NaN. Setting loss to zero.")
-            loss = torch.Tensor(0).requires_grad_()
+            return None
         return {"loss": loss, "hiddens": hiddens}
 
     def _epoch_end(self, phase: str) -> None:
@@ -1422,11 +1422,11 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
 
     def training_step(self, *args, **kwargs) -> torch.Tensor:
         return self._step("train", *args, **kwargs)
-
+    
     def validation_step(self, *args, **kwargs) -> torch.Tensor:
         return self._step("val", *args, **kwargs)
 
-    def test_step(self, *args, **kwargs) -> torch.Tensor:
+    def test_step(soptimizerelf, *args, **kwargs) -> torch.Tensor:
         return self._step("test", *args, **kwargs)
 
     def on_train_epoch_end(self) -> None:
