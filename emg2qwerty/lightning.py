@@ -1382,7 +1382,7 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
                     print("hiddens not present")
                 else:
                     print(args[1])
-                raise Exception("NaN appeared after hiddens is not none: ", flag0, flag1, flag2)
+                raise Exception("NaN appeared after hiddens is not none: ", flag0, flag1, flag2, args[0])
 
         else:
             emissions, hiddens = self.forward(inputs)
@@ -1396,7 +1396,7 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
                     print("hiddens not present")
                 else:
                     print(args[1])
-                raise Exception("NaN appeared after hiddens is none: ", flag0, flag1, flag2)
+                raise Exception("NaN appeared after hiddens is none: ", flag0, flag1, flag2, args[0])
 
         
 
