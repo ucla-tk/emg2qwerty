@@ -1374,6 +1374,14 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         else:
             emissions, hiddens = self.forward(inputs)
 
+        if torch.isnan(emissions).any():
+            if torch.isnan(hiddens).any():
+                raise Exception("Both Emissions and Hiddens have NaN")
+            raise Exception("Emissions has NaN")
+
+        if torch.isnan(hiddens).any():
+            raise Exception("Hiddens has NaN")
+
         # Shrink input lengths by an amount equivalent to the conv encoder's
         # temporal receptive field to compute output activation lengths for CTCLoss.
         # NOTE: This assumes the encoder doesn't perform any temporal downsampling
@@ -1388,6 +1396,9 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
             input_lengths=emission_lengths,  # (N,)
             target_lengths=target_lengths,  # (N,)
         )
+
+        if torch.isnan(loss).any():
+            raise Exception("loss has NaN")
 
         # Decode emissions
         predictions = self.decoder.decode_batch(
