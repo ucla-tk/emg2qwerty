@@ -1393,9 +1393,6 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
             target_lengths=target_lengths,  # (N,)
         )
 
-        if torch.isnan(loss).any():
-            raise Exception("loss has NaN")
-
         # Decode emissions
         predictions = self.decoder.decode_batch(
             emissions=emissions.detach().cpu().numpy(),
