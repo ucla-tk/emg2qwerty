@@ -1291,6 +1291,7 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         mlp_features: Sequence[int],
         lstm_hidden_size: int,
         lstm_num_layers: int,
+        truncated_bptt_steps: int,
         optimizer: DictConfig,
         lr_scheduler: DictConfig,
         decoder: DictConfig,
@@ -1299,7 +1300,7 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         self.save_hyperparameters()
 
         num_features = self.NUM_BANDS * mlp_features[-1]
-        self.truncated_bptt_steps = 128
+        self.truncated_bptt_steps = truncated_bptt_steps
 
         # Model
         # inputs: (T, N, bands=2, electrode_channels=16, freq)
