@@ -556,10 +556,6 @@ class WindowedEMGDataset(torch.utils.data.Dataset):
 
         # checking monotinicty of the locs
 
-
-        print(locs_batch)
-        raise Exception("Checking locs_batch")
-
         return {
             "inputs": input_batch,
             "targets": target_batch,
