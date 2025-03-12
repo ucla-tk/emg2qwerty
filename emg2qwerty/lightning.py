@@ -1374,13 +1374,13 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         else:
             emissions, hiddens = self.forward(inputs)
 
-        if torch.isnan(emissions).any():
-            if torch.isnan(hiddens).any():
-                raise Exception("Both Emissions and Hiddens have NaN")
-            raise Exception("Emissions has NaN")
+        flag0 = torch.isnan(emissions).any()
+        flag1 = torch.isnan(hiddens[0]).any()
+        flag2 = torch.isnan(hiddens[1]).any()
 
-        if torch.isnan(hiddens).any():
-            raise Exception("Hiddens has NaN")
+        if flag0 or flag1 or flag2: 
+            raise Exception("NaN appeared: ", flag0, flag1, flag2)
+
 
         # Shrink input lengths by an amount equivalent to the conv encoder's
         # temporal receptive field to compute output activation lengths for CTCLoss.
