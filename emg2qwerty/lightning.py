@@ -1549,8 +1549,8 @@ class TDSRNNCTCwTBPTTModule(pl.LightningModule):
         
         self.rnn_block = TDSRNNEncoder(
             num_features=num_features,
-            lstm_hidden_size=rnn_hidden_size,
-            lstm_num_layers=rnn_num_layers,
+            rnn_hidden_size=rnn_hidden_size,
+            rnn_num_layers=rnn_num_layers,
             return_hidden=True,
         )
 
