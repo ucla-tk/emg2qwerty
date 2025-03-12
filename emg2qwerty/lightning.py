@@ -1350,6 +1350,8 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         else:
             x, hiddens = self.lstm_block(x)
 
+        
+
         return self.eval_block(x), hiddens
 
     def _step(
@@ -1369,36 +1371,24 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         target_lengths = batch["target_lengths"]
         N = len(input_lengths)  # batch_size
 
+        if torch.isnan(inputs).any():
+            raise Exception("inputs has NaN")
+
         if hiddens is not None:
             emissions, hiddens = self.forward(inputs,hiddens)
-
-            flag0 = torch.isnan(emissions).any()
-            flag1 = torch.isnan(hiddens[0]).any()
-            flag2 = torch.isnan(hiddens[1]).any()
-
-            if flag0 or flag1 or flag2: 
-                print(inputs)
-                if len(args) == 1:
-                    print("hiddens not present")
-                else:
-                    print(args[1])
-                raise Exception("NaN appeared after hiddens is not none: ", flag0, flag1, flag2, args[0])
-
         else:
             emissions, hiddens = self.forward(inputs)
-
-            flag0 = torch.isnan(emissions).any()
-            flag1 = torch.isnan(hiddens[0]).any()
-            flag2 = torch.isnan(hiddens[1]).any()
-            if flag0 or flag1 or flag2: 
-                print(inputs)
-                if len(args) == 1:
-                    print("hiddens not present")
-                else:
-                    print(args[1])
-                raise Exception("NaN appeared after hiddens is none: ", flag0, flag1, flag2, args[0])
-
         
+        flag0 = torch.isnan(emissions).any()
+        flag1 = torch.isnan(hiddens[0]).any()
+        flag2 = torch.isnan(hiddens[1]).any()
+        if flag0 or flag1 or flag2: 
+            print(inputs)
+            if len(args) == 1:
+                print("hiddens not present")
+            else:
+                print(args[1])
+            raise Exception("NaN appeared after hiddens is none: ", flag0, flag1, flag2, args[0])
 
 
 
