@@ -1412,7 +1412,7 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
 
         if torch.isnan(loss):
             warnings.warn("Loss contains NaN. Setting loss to zero.")
-            return None
+            loss = None
         return {"loss": loss, "hiddens": hiddens}
 
     def _epoch_end(self, phase: str) -> None:
