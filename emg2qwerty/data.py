@@ -506,8 +506,24 @@ class WindowedEMGDataset(torch.utils.data.Dataset):
         end_t = timestamps[(offset + self.window_length - 1) - window_start]
         label_data = self.session.ground_truth(start_t, end_t)
         labels = torch.as_tensor(label_data.labels)
+        label_timestamps = torch.as_tensor(np.reshape(label_data.timestamps,(-1,1)), dtype=torch.double)
 
-        return emg, labels
+        # for sake of time, we will only take into account the key presses
+        padded_start = timestamps[0]
+        padded_end = timestamps[-1]
+        div = (padded_end - padded_start) / (emg.shape[0] + 1)
+        
+        pip0 = torch.arange(0, emg.shape[0], dtype=torch.double)*div + padded_start
+        pip1 = torch.arange(1, emg.shape[0]+1, dtype=torch.double)*div + padded_start
+        
+        val0 = pip0 < label_timestamps
+        val1 = pip1 >= label_timestamps        
+        temp = (val0 & val1).long()
+        locs = torch.argmax(temp, dim=1)
+
+        assert torch.all(torch.diff(locs) >= 0)
+
+        return emg, labels, locs
 
     @staticmethod
     def collate(
@@ -522,10 +538,13 @@ class WindowedEMGDataset(torch.utils.data.Dataset):
         """
         inputs = [sample[0] for sample in samples]  # [(T, ...)]
         targets = [sample[1] for sample in samples]  # [(T,)]
+        locs = [sample[2] for sample in samples]
 
         # Batch of inputs and targets padded along time
-        input_batch = nn.utils.rnn.pad_sequence(inputs, padding_value=charset().num_classes)  # (T, N, ...)
+        input_batch = nn.utils.rnn.pad_sequence(inputs)  # (T, N, ...)
         target_batch = nn.utils.rnn.pad_sequence(targets, padding_value=charset().num_classes)  # (T, N)
+        locs_batch = nn.utils.rnn.pad_sequence(locs, padding_value=-1)
+        
 
         # Lengths of unpadded input and target sequences for each batch entry
         input_lengths = torch.as_tensor(
@@ -535,9 +554,16 @@ class WindowedEMGDataset(torch.utils.data.Dataset):
             [len(target) for target in targets], dtype=torch.int32
         )
 
+        # checking monotinicty of the locs
+
+
+        print(locs_batch)
+        raise Exception("Checking locs_batch")
+
         return {
             "inputs": input_batch,
             "targets": target_batch,
             "input_lengths": input_lengths,
             "target_lengths": target_lengths,
+            "locs": locs_batch,
         }
