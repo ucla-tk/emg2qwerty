@@ -4,6 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import warnings
+
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, ClassVar
@@ -1371,27 +1373,10 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         target_lengths = batch["target_lengths"]
         N = len(input_lengths)  # batch_size
 
-        if torch.isnan(inputs).any():
-            raise Exception("inputs has NaN")
-
         if hiddens is not None:
             emissions, hiddens = self.forward(inputs,hiddens)
         else:
             emissions, hiddens = self.forward(inputs)
-        
-        flag0 = torch.isnan(emissions).any()
-        flag1 = torch.isnan(hiddens[0]).any()
-        flag2 = torch.isnan(hiddens[1]).any()
-        if flag0 or flag1 or flag2: 
-            print(inputs)
-            if len(args) == 1:
-                print("hiddens not present")
-            else:
-                print(args[1])
-            raise Exception("NaN appeared after hiddens is none: ", flag0, flag1, flag2, args[0])
-
-
-
 
         # Shrink input lengths by an amount equivalent to the conv encoder's
         # temporal receptive field to compute output activation lengths for CTCLoss.
@@ -1427,6 +1412,10 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
             metrics.update(prediction=predictions[i], target=target)
 
         self.log(f"{phase}/loss", loss, batch_size=N, sync_dist=True)
+
+        if torch.isnan(loss):
+            warnings.warn("Loss contains NaN. Setting loss to zero.")
+            loss[:] = 0
         return {"loss": loss, "hiddens": hiddens}
 
     def _epoch_end(self, phase: str) -> None:
