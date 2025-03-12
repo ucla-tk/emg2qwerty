@@ -1371,20 +1371,36 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
 
         if hiddens is not None:
             emissions, hiddens = self.forward(inputs,hiddens)
+
+            flag0 = torch.isnan(emissions).any()
+            flag1 = torch.isnan(hiddens[0]).any()
+            flag2 = torch.isnan(hiddens[1]).any()
+
+            if flag0 or flag1 or flag2: 
+                print(inputs)
+                if len(args) == 1:
+                    print("hiddens not present")
+                else:
+                    print(args[1])
+                raise Exception("NaN appeared after hiddens is not none: ", flag0, flag1, flag2)
+
         else:
             emissions, hiddens = self.forward(inputs)
 
-        flag0 = torch.isnan(emissions).any()
-        flag1 = torch.isnan(hiddens[0]).any()
-        flag2 = torch.isnan(hiddens[1]).any()
+            flag0 = torch.isnan(emissions).any()
+            flag1 = torch.isnan(hiddens[0]).any()
+            flag2 = torch.isnan(hiddens[1]).any()
+            if flag0 or flag1 or flag2: 
+                print(inputs)
+                if len(args) == 1:
+                    print("hiddens not present")
+                else:
+                    print(args[1])
+                raise Exception("NaN appeared after hiddens is none: ", flag0, flag1, flag2)
 
-        if flag0 or flag1 or flag2: 
-            print(inputs)
-            if len(args) == 1:
-                print("hiddens not present")
-            else:
-                print(args[1])
-            raise Exception("NaN appeared: ", flag0, flag1, flag2)
+        
+
+
 
 
         # Shrink input lengths by an amount equivalent to the conv encoder's
