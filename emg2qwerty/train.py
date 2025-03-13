@@ -19,12 +19,16 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from emg2qwerty import transforms, utils
 from emg2qwerty.transforms import Transform
 
+import torch
+
 
 log = logging.getLogger(__name__)
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="base")
 def main(config: DictConfig):
+    torch.set_default_dtype(torch.float64)
+
     log.info(f"\nConfig:\n{OmegaConf.to_yaml(config)}")
 
     # Add working dir to PYTHONPATH
@@ -119,12 +123,12 @@ def main(config: DictConfig):
     val_metrics = trainer.validate(module, datamodule)
     
     # test keeps crashing my gpu, so we're doing cpu accelerator instead
-    # config.trainer["accelerator"] = "cpu"
+    #config.trainer["accelerator"] = "cpu"
     # # Initialize trainer
-    # trainer = pl.Trainer(
-    #     **config.trainer,
-    #     callbacks=callbacks,
-    # )
+    #trainer = pl.Trainer(
+    #    **config.trainer,
+    #    callbacks=callbacks,
+    #)
     test_metrics = trainer.test(module, datamodule)
 
     results = {

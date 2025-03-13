@@ -19,6 +19,9 @@ from torch import nn
 from torch.utils.data import ConcatDataset, DataLoader
 from torchmetrics import MetricCollection
 
+from typing import Any, Optional, Sequence
+from lightning_lite.utilities.types import Steppable
+
 from emg2qwerty import utils
 from emg2qwerty.charset import charset
 from emg2qwerty.data import LabelData, WindowedEMGDataset
@@ -1301,8 +1304,12 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
+        self.lstm_num_layers = lstm_num_layers
+        self.lstm_hidden_size = lstm_hidden_size
+
         num_features = self.NUM_BANDS * mlp_features[-1]
         self.truncated_bptt_steps = truncated_bptt_steps
+        self.bookmark = None
 
         # Model
         # inputs: (T, N, bands=2, electrode_channels=16, freq)
@@ -1352,8 +1359,6 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         else:
             x, hiddens = self.lstm_block(x)
 
-        
-
         return self.eval_block(x), hiddens
 
     def _step(
@@ -1366,6 +1371,20 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
             idx, hiddens = args
         else:
             raise Exception("Unexpected number of arguments in TDSLSTMCTCwTBPTTModule under _step")
+    
+        for param in self.parameters():
+            if torch.isnan(param).any():
+                #raise Exception("NaN in parameters")
+                print("NaN in parameters. Reseting to a previous set of parameters")
+                self.load_state_dict(self.bookmark)
+                for param in self.parameters():
+                    if torch.isnan(param).any():
+                        raise Exception("NaN in parameters even after bookmark")
+                        break
+                break
+                
+        self.bookmark = deepcopy(self.state_dict())
+
 
         inputs = batch["inputs"]
         targets = batch["targets"]
@@ -1375,8 +1394,29 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
 
         if hiddens is not None:
             emissions, hiddens = self.forward(inputs,hiddens)
+
+            # flag0 = torch.isnan(emissions).any()
+            # flag1 = torch.isnan(hiddens[0]).any()
+            # flag2 = torch.isnan(hiddens[1]).any()
+
+            # if flag0 or flag1 or flag2:
+            #     raise Exception("NaN in hiddens is not none")
+
+
         else:
-            emissions, hiddens = self.forward(inputs)
+            # 2 * lstm_num_layers, N, hidden_size
+            h_0 = torch.randn(2*self.lstm_num_layers, N, self.lstm_hidden_size).cuda() * 0.01
+            c_0 = torch.randn(2*self.lstm_num_layers, N, self.lstm_hidden_size).cuda() * 0.01
+            hiddens = (h_0, c_0)
+
+            emissions, hiddens = self.forward(inputs, hiddens)
+
+            # flag0 = torch.isnan(emissions).any()
+            # flag1 = torch.isnan(hiddens[0]).any()
+            # flag2 = torch.isnan(hiddens[1]).any()
+
+            # if flag0 or flag1 or flag2:
+            #     raise Exception("NaN in hiddens is none") ####
 
         # Shrink input lengths by an amount equivalent to the conv encoder's
         # temporal receptive field to compute output activation lengths for CTCLoss.
@@ -1410,9 +1450,6 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
 
         self.log(f"{phase}/loss", loss, batch_size=N, sync_dist=True)
 
-        if torch.isnan(loss):
-            warnings.warn("Loss contains NaN. Setting loss to zero.")
-            loss = torch.Tensor(0.0, requires_grad=True)
         return {"loss": loss, "hiddens": hiddens}
 
     def _epoch_end(self, phase: str) -> None:
@@ -1517,6 +1554,26 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
             splits.append(deepcopy(split))
         
         return splits
+    
+    def backward(
+        self, loss: torch.Tensor, optimizer: Optional[Steppable], optimizer_idx: Optional[int], *args: Any, **kwargs: Any
+    ) -> None:
+        """Called to perform backward on the loss returned in :meth:`training_step`. Override this hook with your
+        own implementation if you need to.
+
+        Args:
+            loss: The loss tensor returned by :meth:`training_step`. If gradient accumulation is used, the loss here
+                holds the normalized value (scaled by 1 / accumulation steps).
+            optimizer: Current optimizer being used. ``None`` if using manual optimization.
+            optimizer_idx: Index of the current optimizer being used. ``None`` if using manual optimization.
+
+        Example::
+
+            def backward(self, loss, optimizer, optimizer_idx):
+                loss.backward()
+        """
+        loss.backward()
+
 
 ###############################################################
 ###############################################################

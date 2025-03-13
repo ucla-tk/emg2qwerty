@@ -21,6 +21,7 @@ trainer:
   devices: 1
   num_nodes: 1
   max_epochs: 30
+  detect_anomaly: True
   default_root_dir: ${hydra:runtime.output_dir}
 
 callbacks:
