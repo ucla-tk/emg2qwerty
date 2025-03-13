@@ -1309,7 +1309,6 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
 
         num_features = self.NUM_BANDS * mlp_features[-1]
         self.truncated_bptt_steps = truncated_bptt_steps
-        self.bookmark = None
 
         # Model
         # inputs: (T, N, bands=2, electrode_channels=16, freq)
@@ -1371,26 +1370,13 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
             idx, hiddens = args
         else:
             raise Exception("Unexpected number of arguments in TDSLSTMCTCwTBPTTModule under _step")
-    
-        for param in self.parameters():
-            if torch.isnan(param).any():
-                #raise Exception("NaN in parameters")
-                print("NaN in parameters. Reseting to a previous set of parameters")
-                self.load_state_dict(self.bookmark)
-                for param in self.parameters():
-                    if torch.isnan(param).any():
-                        raise Exception("NaN in parameters even after bookmark")
-                        break
-                break
-                
-        self.bookmark = deepcopy(self.state_dict())
-
-
+        
         inputs = batch["inputs"]
         targets = batch["targets"]
         input_lengths = batch["input_lengths"]
         target_lengths = batch["target_lengths"]
         N = len(input_lengths)  # batch_size
+
 
         if hiddens is not None:
             emissions, hiddens = self.forward(inputs,hiddens)
@@ -1458,6 +1444,17 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         metrics.reset()
 
     def training_step(self, *args, **kwargs) -> torch.Tensor:
+        # optimizer = self.optimizers()  # Get the Adam optimizer
+        # for group in optimizer.param_groups:
+        #     for param in group['params']:
+        #         if param.grad is not None:
+        #             state = optimizer.state[param]
+        #             if 'exp_avg' in state and 'exp_avg_sq' in state:
+        #                 if torch.isnan(state['exp_avg']).any():
+        #                     print(f"NaN detected in first moment (m) for {param.shape}")
+        #                 if torch.isnan(state['exp_avg_sq']).any():
+        #                     print(f"NaN detected in second moment (v) for {param.shape}")
+
         return self._step("train", *args, **kwargs)
     
     def validation_step(self, *args, **kwargs) -> torch.Tensor:
@@ -1573,6 +1570,7 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
                 loss.backward()
         """
         loss.backward()
+
 
 
 ###############################################################
