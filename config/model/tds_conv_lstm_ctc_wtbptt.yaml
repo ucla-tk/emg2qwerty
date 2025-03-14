@@ -3,8 +3,8 @@ module:
   _target_: emg2qwerty.lightning.TDSConvLSTMCTCwTBPTTModule
   in_features: 528  # freq * channels = (n_fft // 2 + 1) * 16
   mlp_features: [384]
-  mlp_features: [384]
   block_channels: [24, 24, 24, 24]
+  kernel_width: 32
   lstm_hidden_size: 128
   lstm_num_layers: 2
   truncated_bptt_steps: 512 # default is 128
