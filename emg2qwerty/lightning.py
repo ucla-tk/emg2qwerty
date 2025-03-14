@@ -1444,17 +1444,6 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         metrics.reset()
 
     def training_step(self, *args, **kwargs) -> torch.Tensor:
-        # optimizer = self.optimizers()  # Get the Adam optimizer
-        # for group in optimizer.param_groups:
-        #     for param in group['params']:
-        #         if param.grad is not None:
-        #             state = optimizer.state[param]
-        #             if 'exp_avg' in state and 'exp_avg_sq' in state:
-        #                 if torch.isnan(state['exp_avg']).any():
-        #                     print(f"NaN detected in first moment (m) for {param.shape}")
-        #                 if torch.isnan(state['exp_avg_sq']).any():
-        #                     print(f"NaN detected in second moment (v) for {param.shape}")
-
         return self._step("train", *args, **kwargs)
     
     def validation_step(self, *args, **kwargs) -> torch.Tensor:
@@ -1552,27 +1541,19 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
         
         return splits
     
-    def backward(
-        self, loss: torch.Tensor, optimizer: Optional[Steppable], optimizer_idx: Optional[int], *args: Any, **kwargs: Any
-    ) -> None:
-        """Called to perform backward on the loss returned in :meth:`training_step`. Override this hook with your
-        own implementation if you need to.
+    def on_optimization_step(self, optimizer, optimizer_idx, loss, batch_idx, batch):
 
-        Args:
-            loss: The loss tensor returned by :meth:`training_step`. If gradient accumulation is used, the loss here
-                holds the normalized value (scaled by 1 / accumulation steps).
-            optimizer: Current optimizer being used. ``None`` if using manual optimization.
-            optimizer_idx: Index of the current optimizer being used. ``None`` if using manual optimization.
-
-        Example::
-
-            def backward(self, loss, optimizer, optimizer_idx):
-                loss.backward()
-        """
-        loss.backward()
-
-
-
+        optimizer = self.optimizers()  # Get the Adam optimizer
+        for group in optimizer.param_groups:
+            for param in group['params']:
+                if param.grad is not None:
+                    state = optimizer.state[param]
+                    if 'exp_avg' in state and 'exp_avg_sq' in state:
+                        if torch.isnan(state['exp_avg']).any():
+                            self.load_from_checkpoint(self.trainer.checkpoint_callback.last_model_path) 
+                        if torch.isnan(state['exp_avg_sq']).any():
+                            self.load_from_checkpoint(self.trainer.checkpoint_callback.last_model_path) 
+                            
 ###############################################################
 ###############################################################
 ###############################################################
