@@ -1550,10 +1550,12 @@ class TDSLSTMCTCwTBPTTModule(pl.LightningModule):
                     state = optimizer.state[param]
                     if 'exp_avg' in state and 'exp_avg_sq' in state:
                         if torch.isnan(state['exp_avg']).any():
+                            print("##########################################\n##########################################\n")
                             self.load_from_checkpoint(self.trainer.checkpoint_callback.last_model_path) 
                         if torch.isnan(state['exp_avg_sq']).any():
+                            print("##########################################\n##########################################\n")
                             self.load_from_checkpoint(self.trainer.checkpoint_callback.last_model_path) 
-                            
+
 ###############################################################
 ###############################################################
 ###############################################################
