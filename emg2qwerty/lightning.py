@@ -1834,11 +1834,6 @@ class TDSConvLSTMCTCwTBPTTModule(pl.LightningModule):
                 num_features=num_features,
                 block_channels=block_channels,
                 kernel_width=kernel_width,
-            ),
-            TDSConvEncoder(
-                num_features=num_features,
-                block_channels=block_channels,
-                kernel_width=kernel_width,
             ),)
         
         self.lstm_block = TDSLSTMEncoder(
