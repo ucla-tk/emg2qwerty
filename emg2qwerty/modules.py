@@ -343,6 +343,43 @@ class TDSGRUEncoder(nn.Module):
         x = self.out_layer(x)
         return x
 
+class TDSRNNEncoder(nn.Module):
+    # directly from coding helper
+    def __init__(
+        self,
+        num_features: int,
+        rnn_hidden_size: int = 128,
+        rnn_num_layers: int = 4,
+        return_hidden: bool = False,
+    ) -> None:
+        super().__init__()
+        self.return_hidden = return_hidden
+
+        self.rnn_layers = nn.RNN(
+            input_size=num_features,
+            hidden_size=rnn_hidden_size,
+            num_layers=rnn_num_layers,
+            batch_first=False,
+            bidirectional=True,
+        )
+
+        self.fc_block = TDSFullyConnectedBlock(2 * rnn_hidden_size)
+        self.out_layer = nn.Linear(2 * rnn_hidden_size, num_features)
+
+    def forward(self, inputs: torch.Tensor, hiddens: torch.Tensor | None = None) -> torch.Tensor:
+        if hiddens is not None:
+            x, h = self.rnn_layers(inputs, hiddens)
+        else:
+            x, h = self.rnn_layers(inputs)
+        
+        x = self.fc_block(x)
+        x = self.out_layer(x)
+
+        if self.return_hidden:
+            return x, h
+        else:
+            return x
+
 class TDSConvCascade(nn.Module):
     """A time depth-separable convolutional encoder composing a sequence
     of `TDSConv2dBlock` and `TDSFullyConnectedBlock` as per
